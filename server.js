@@ -57,19 +57,21 @@ app.get('/', (req, res) => {
 })
 
 app.get('/xyzstream', (req, res) => {
-    res.json({config: {
-        path: {
-            stream1 : "akamai",
-            stream2: "fastify",
-            "stream-debug": "debug"
+    res.json({
+        config: {
+            path: {
+                stream1: "akamai",
+                stream2: "fastify",
+                "stream-debug": "debug"
+            }
         }
-    }});
+    });
 })
 
 app.get('/stream1', async (req, res) => {
     const ak_stream_url = await stream_url(0);
     console.log("Stream URL:", ak_stream_url);
-    
+
     if (!ak_stream_url) {
         return res.status(500).json({ error: 'Failed to fetch stream URL' });
     }
@@ -81,7 +83,7 @@ app.get('/stream1', async (req, res) => {
 app.get('/stream2', async (req, res) => {
     const ak_stream_url = await stream_url(1);
     console.log("Stream URL:", ak_stream_url);
-    
+
     if (!ak_stream_url) {
         return res.status(500).json({ error: 'Failed to fetch stream URL' });
     }
@@ -96,6 +98,16 @@ app.get('/stream-debug', async (req, res) => {
     const ak_stream_url1 = await stream_url(0);
     const ak_stream_url2 = await stream_url(1);
     res.json({ stream_url1: ak_stream_url1, stream_url2: ak_stream_url2 });
+});
+
+app.get('*', (req, res) => {
+    // if (req.path !== '/stream') {
+    const content = `This is a cached response for route: ${req.path}`;
+    // console.log(`Caching response for route: ${req.path}`);
+    res.json({ value: "What are you searching for buddy?", content })
+    // } else {
+    //     next();
+    // }
 });
 
 
