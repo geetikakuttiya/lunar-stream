@@ -100,14 +100,8 @@ app.get('/stream-debug', async (req, res) => {
     res.json({ stream_url1: ak_stream_url1, stream_url2: ak_stream_url2 });
 });
 
-app.get('*', (req, res) => {
-    // if (req.path !== '/stream') {
-    const content = `This is a cached response for route: ${req.path}`;
-    // console.log(`Caching response for route: ${req.path}`);
-    res.json({ value: "What are you searching for buddy?", content })
-    // } else {
-    //     next();
-    // }
+app.use((req, res) => {
+    res.json({ value: "What are you searching for buddy?" });
 });
 
 
