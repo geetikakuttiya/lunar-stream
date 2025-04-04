@@ -6,6 +6,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 const lunar_status = process.env.CONFIG_URL || '';
+const jio_hin_stream = process.env.JIO_STREAM_HIN || '';
+const jio_eng_stream = process.env.JIO_STREAM_ENG || '';
 const stream_server = ["akamai_live", "fastly_live"]
 const lunar_dynamic_url = async () => {
     try {
@@ -93,11 +95,41 @@ app.get('/stream2', async (req, res) => {
     res.redirect(ak_stream_url);
 });
 
+app.get('/stream3', async (req, res) => {
+    // const ak_stream_url = await stream_url(1);
+    // console.log("Stream URL:", ak_stream_url);
+    const hin_stream = jio_hin_stream;
+
+    if (!hin_stream) {
+        return res.status(500).json({ error: 'Failed to fetch stream URL' });
+    }
+
+    // Redirect VLC directly to the source stream
+    // This simple approach often works better for VLC
+    res.redirect(hin_stream);
+});
+
+app.get('/stream4', async (req, res) => {
+    // const ak_stream_url = await stream_url(1);
+    // console.log("Stream URL:", ak_stream_url);
+    const eng_stream = jio_eng_stream;
+
+    if (!eng_stream) {
+        return res.status(500).json({ error: 'Failed to fetch stream URL' });
+    }
+
+    // Redirect VLC directly to the source stream
+    // This simple approach often works better for VLC
+    res.redirect(eng_stream);
+});
+
 // For completeness, also create a debug endpoint that shows the stream URL
 app.get('/stream-debug', async (req, res) => {
     const ak_stream_url1 = await stream_url(0);
     const ak_stream_url2 = await stream_url(1);
-    res.json({ stream_url1: ak_stream_url1, stream_url2: ak_stream_url2 });
+    const eng_stream = jio_eng_stream;
+    const hin_stream = jio_hin_stream;
+    res.json({ stream_url1: ak_stream_url1, stream_url2: ak_stream_url2, eng_jio: eng_stream, hin_jio: hin_stream });
 });
 
 app.use((req, res) => {
