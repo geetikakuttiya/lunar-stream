@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Update URL</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f7f7f7;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: 50px auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .message {
+      margin-top: 20px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Update URL</h1>
+    <form id="updateUrlForm">
+      <label for="new_url">New URL</label>
+      <input type="text" id="new_url" name="new_url" placeholder="Enter the new URL" required>
+
+      <label for="auth_key">Authentication Key</label>
+      <input type="text" id="auth_key" name="auth_key" placeholder="Enter the auth key" required>
+
+      <button type="submit">Update URL</button>
+    </form>
+
+    <div id="message" class="message"></div>
+  </div>
+
+  <script>
+    // Handle form submission
+    document.getElementById('updateUrlForm').addEventListener('submit', async function(event) {
+      event.preventDefault();
+  
+      const newUrl = document.getElementById('new_url').value;
+      const authKey = document.getElementById('auth_key').value;
+      const messageDiv = document.getElementById('message');  // The div that will show messages
+  
+      // Reset the message container before starting the request
+      messageDiv.textContent = '';
+      messageDiv.className = 'message';
+  
+      // Send data to the backend to update the URL
+      try {
+        const response = await fetch('/update-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ new_url: newUrl, auth_key: authKey })
+        });
+        // console.log(response.statusText); // Log the response for debugging
+  
+        const data = await response; // Parse the response body
+  
+        // Check if the response is successful
+        if (response.ok) {
+          messageDiv.textContent = `Success: ${data.statusText}`; // Display success message
+          messageDiv.className = 'message success';  // Apply success class
+          // Optionally reset the form after success
+          document.getElementById('updateUrlForm').reset();
+        } else {
+          messageDiv.textContent = `Error: ${data.statusText}`; // Display error message
+          messageDiv.className = 'message error';  // Apply error class
+        }
+  
+      } catch (error) {
+        // Handle any errors during the fetch request
+        messageDiv.textContent = `Error: Unable to update URL. Please try again.`; // Display generic error message
+        messageDiv.className = 'message error';  // Apply error class
+      }
+    });
+  </script>
+  
+
+</body>
+</html>
