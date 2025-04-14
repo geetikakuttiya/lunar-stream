@@ -14,13 +14,25 @@ const jio_hin_stream = process.env.JIO_STREAM_HIN || stream_soon;
 const jio_eng_stream = process.env.JIO_STREAM_ENG || stream_soon;
 const stream_server = ["akamai_live", "fastly_live"]
 
+const check_request = (req, res, next) => {
+    const headers = req.headers;
+        // console.error('Error:', "Invalid request headers:", headers);
+        if (headers['user-agent'].includes("VLC") || req.path === "/update-url" || req.path === "/update-form" || req.path === "/xyzstream" || req.path === "/stream-debug") {
+            next();
+        }
+        else {
+            res.status(500).send('You are not allowed to access this stream directly use VLC or any other player.');
+        }
+}
+
 const lunar_dynamic_url = async () => {
     try {
         const response = await axios.get(lunar_status);
         return response.data;
     } catch (error) {
-        console.error('Error fetching stream status:', error);
+        // console.error('Error fetching stream status:', error);
         return null;
+        
     }
 }
 
@@ -30,7 +42,7 @@ const get_stream_object = async (url) => {
         const stream_url = response.data;
         return stream_url;
     } catch (error) {
-        console.error('Error fetching stream URL:', error);
+        // console.error('Error fetching stream URL:', error);
         return null;
     }
 }
@@ -38,16 +50,20 @@ const get_stream_object = async (url) => {
 const stream_url = async (server_no) => {
     const streamStatus = await lunar_dynamic_url();
     if (!streamStatus) {
-        return null;
+        // console.error('Error fetching stream status: Stream status is null');
+        return stream_soon;
     }
     try {
         const stream_path = streamStatus["next_live_clip"]["config"]
         const stream_object = await get_stream_object(stream_path);
-        const stream_url = stream_object["request"]["files"]["hls"]["cdns"][stream_server[server_no]]["url"];
-        return stream_url;
+        const stream_url_json = stream_object["request"]["files"]["hls"]["cdns"][stream_server[server_no]]["json_url"];
+        const stream_url = await axios.get(stream_url_json)
+        const hsl_url = stream_url.data['url'];
+
+        return hsl_url;
 
     } catch (error) {
-        console.error('Error fetching stream URL:', error);
+        // console.error('Error fetching stream URL:', error);
         return "https://static.vecteezy.com/system/resources/previews/048/479/658/mp4/text-with-coming-soon-effect-glitch-on-black-background-free-video.mp4";
     }
 
@@ -68,6 +84,8 @@ app.get('/update-form', (req, res) => {
 app.get('/', (req, res) => {
     res.send('Hello World');
 })
+
+app.use(check_request); // Apply the middleware to all routes
 
 app.get('/xyzstream', (req, res) => {
     res.json({
@@ -90,38 +108,50 @@ app.get('/stream1', async (req, res) => {
     console.log("Stream URL:", ak_stream_url);
 
     if (!ak_stream_url) {
-        return res.status(500).json({ error: 'Failed to fetch stream URL' });
+        return res.status(500).json({ error: 'Failed to fetch stream URL inside stream1' });
     }
 
     // Redirect VLC directly to the source stream
     // This simple approach often works better for VLC
     res.redirect(ak_stream_url);
+    return null;
 });
+
 app.get('/stream2', async (req, res) => {
     const ak_stream_url = await stream_url(1);
     console.log("Stream URL:", ak_stream_url);
 
     if (!ak_stream_url) {
-        return res.status(500).json({ error: 'Failed to fetch stream URL' });
+        return res.status(500).json({ error: 'Failed to fetch stream URL inside stream2' });
     }
 
     // Redirect VLC directly to the source stream
     // This simple approach often works better for VLC
     res.redirect(ak_stream_url);
+    return null;
 });
 
 app.get('/stream3', async (req, res) => {
     // const ak_stream_url = await stream_url(1);
     // console.log("Stream URL:", ak_stream_url);
-    const hin_stream = jio_hin_stream;
+    try{
+        // const demo = await axios.get(jio_hin_stream);
+        // console.log("sahdva:", demo)
 
-    if (!hin_stream) {
-        return res.status(500).json({ error: 'Failed to fetch stream URL' });
+        const hin_stream = jio_hin_stream;
+    
+        if (!hin_stream) {
+            throw new Error('Failed to fetch stream URL in stream3 route');
+            // return res.status(500).json({ error: 'Failed to fetch stream URL' });
+        }
+    
+        // Redirect VLC directly to the source stream
+        // This simple approach often works better for VLC
+        res.redirect(hin_stream);
+    }catch(err){
+        res.redirect(stream_soon)
+        return null;
     }
-
-    // Redirect VLC directly to the source stream
-    // This simple approach often works better for VLC
-    res.redirect(hin_stream);
 });
 
 app.get('/stream4', async (req, res) => {
@@ -130,6 +160,7 @@ app.get('/stream4', async (req, res) => {
     const eng_stream = jio_eng_stream;
 
     if (!eng_stream) {
+        res.redirect(stream_soon)
         return res.status(500).json({ error: 'Failed to fetch stream URL' });
     }
 
@@ -144,7 +175,8 @@ app.get('/source', async (req, res) => {
         const url = await redis.get('url');  // Fetching the URL stored with the key 'url'
 
         if (!url) {
-            return res.status(400).send('No URL found in Redis.');
+            throw new Error('No URL found in Redis. inside /source route');
+            // return res.status(400).send('No URL found in Redis.');
         }
 
         // Fetch the HTML content of the website using Axios
@@ -164,11 +196,12 @@ app.get('/source', async (req, res) => {
             await redis.set('m3u8_url', m3u8Url); // Store the m3u8 URL in Redis
             res.redirect(m3u8Url); // Redirect to the m3u8 URL
         } else {
-            res.status(404).send('m3u8 link not found.');
+            throw new Error('m3u8 link not found in the HTML.');
+            // res.status(404).send('m3u8 link not found.');
         }
     } catch (error) {
         const headers = req.headers;
-        console.error('Error:', error);
+        // console.error('Error:', error);
         if (headers['user-agent'].includes("VLC")) {
             res.redirect(stream_soon);
         }
@@ -198,11 +231,10 @@ app.post('/update-url', async (req, res) => {
         await redis.set('url', new_url);
         res.send(`URL successfully updated to: ${new_url}`);
     } catch (error) {
-        console.error('Error:', error);
+        // console.error('Error:', error);
         res.status(500).send('Error updating the URL.');
     }
 });
-
 
 // For completeness, also create a debug endpoint that shows the stream URL
 app.get('/stream-debug', async (req, res) => {
@@ -231,6 +263,5 @@ app.listen(PORT, async () => {
         process.exit(1); // Exit the process if Redis connection fails
     }
 });
-
 
 
