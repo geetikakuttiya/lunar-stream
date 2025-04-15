@@ -15,6 +15,17 @@ const jio_eng_stream = process.env.JIO_STREAM_ENG || stream_soon;
 const stream_server = ["akamai_live", "fastly_live"]
 
 
+function getBaseUrl(req) {
+    // First try to use PUBLIC_URL env variable
+    if (process.env.PUBLIC_URL) {
+        return process.env.PUBLIC_URL.replace(/\/$/, ''); // Remove trailing slash if present
+    }
+    
+    // Fallback to request protocol and host in development
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    return `${protocol}://${req.headers.host}`;
+}
+
 const check_request = (req, res, next) => {
     // Always allow in development mode
     if (process.env.NODE_ENV !== "production") {
@@ -448,66 +459,10 @@ app.get('/stream-debug', async (req, res) => {
     });
 });
 
-// Add a web UI for all stream options
-// app.get('/streams', (req, res) => {
-//     res.send(`
-//     <!DOCTYPE html>
-//     <html>
-//     <head>
-//         <title>Stream Options</title>
-//         <style>
-//             body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-//             .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 16px 0; }
-//             .btn { display: inline-block; background: #4CAF50; color: white; padding: 10px 15px; 
-//                   text-decoration: none; border-radius: 4px; margin: 5px 0; }
-//             .btn-small { padding: 5px 10px; font-size: 0.8em; }
-//             code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; }
-//         </style>
-//     </head>
-//     <body>
-//         <h1>Available Streams</h1>
-        
-//         <div class="card">
-//             <h2>Main Streams</h2>
-//             <p><a class="btn" href="/stream1">Stream 1 (Akamai)</a></p>
-//             <p><a class="btn" href="/stream2">Stream 2 (Fastly)</a></p>
-//             <p><a class="btn" href="/stream3">Stream 3 (Jio Hindi)</a></p>
-//             <p><a class="btn" href="/stream4">Stream 4 (Jio English)</a></p>
-//         </div>
-        
-//         <div class="card">
-//             <h2>iFrame Stream</h2>
-//             <p><a class="btn" href="/iframe-vlc">iFrame Stream (VLC)</a></p>
-//             <p>
-//                 Stream index: 
-//                 <a class="btn btn-small" href="/iframe-stream?index=1">1</a>
-//                 <a class="btn btn-small" href="/iframe-stream?index=2">2</a>
-//                 <a class="btn btn-small" href="/iframe-stream?index=3">3</a>
-//             </p>
-//             <p><a class="btn" href="/iframe-refresh">Refresh iFrame Stream</a></p>
-//             <p>VLC URL: <code>http://localhost:${PORT}/iframe-vlc</code></p>
-//         </div>
-        
-//         <div class="card">
-//             <h2>Configuration</h2>
-//             <p><a class="btn" href="/iframe-form">Update iFrame URL</a></p>
-//             <p><a class="btn" href="/update-form">Update Source URL</a></p>
-//         </div>
-        
-//         <div class="card">
-//             <h2>Debug</h2>
-//             <p><a href="/stream-debug">View Stream Debug Info</a></p>
-//         </div>
-//     </body>
-//     </html>
-//     `);
-// });
 
-
-
-// Replace the main streams section in the /streams route
 app.get('/streams', async (req, res) => {
-    // Get current stream URLs
+    // Get the base URL for this request
+    const baseUrl = getBaseUrl(req);
     
     // Get iframe m3u8 URLs if available
     let iframe_m3u8_urls = [];
@@ -545,36 +500,42 @@ app.get('/streams', async (req, res) => {
             .url-container { display: flex; align-items: center; margin: 10px 0; }
             .url-text { flex-grow: 1; word-break: break-all; }
             .status { color: #4CAF50; margin-left: 10px; }
+            .env-info { background: #f8f8f8; padding: 5px; border-radius: 3px; font-size: 0.8em; color: #666; }
         </style>
     </head>
     <body>
         <h1>Available Streams</h1>
+        
+        <div class="env-info">
+            Environment: ${process.env.NODE_ENV || 'development'} | 
+            Base URL: ${baseUrl}
+        </div>
         
         <div class="card">
             <h2>Main Streams</h2>
             
             <div class="url-container">
                 <a class="btn" href="/stream1">Stream 1 (Akamai)</a>
-                <button class="copy-btn" onclick="copyToClipboard('http://localhost:${PORT}/stream1')">Copy URL</button>
+                <button class="copy-btn" onclick="copyToClipboard('${baseUrl}/stream1')">Copy URL</button>
             </div>
             
             <div class="url-container">
                 <a class="btn" href="/stream2">Stream 2 (Fastly)</a>
-                <button class="copy-btn" onclick="copyToClipboard('http://localhost:${PORT}/stream2')">Copy URL</button>
+                <button class="copy-btn" onclick="copyToClipboard('${baseUrl}/stream2')">Copy URL</button>
             </div>
             
             <div class="url-container">
                 <a class="btn" href="/stream3">Stream 3 (Jio Hindi)</a>
-                <button class="copy-btn" onclick="copyToClipboard('http://localhost:${PORT}/stream3')">Copy URL</button>
+                <button class="copy-btn" onclick="copyToClipboard('${baseUrl}/stream3')">Copy URL</button>
             </div>
             
             <div class="url-container">
                 <a class="btn" href="/stream4">Stream 4 (Jio English)</a>
-                <button class="copy-btn" onclick="copyToClipboard('http://localhost:${PORT}/stream4')">Copy URL</button>
+                <button class="copy-btn" onclick="copyToClipboard('${baseUrl}/stream4')">Copy URL</button>
             </div>
             
             <p>For VLC, open Network Stream and enter:<br>
-            <code>http://localhost:${PORT}/stream1</code> or any other stream number</p>
+            <code>${baseUrl}/stream1</code> or any other stream number</p>
         </div>
         
         <div class="card">
@@ -591,17 +552,17 @@ app.get('/streams', async (req, res) => {
                 <p>Copy VLC links:</p>
                 <div class="url-container">
                     <div class="url-text">
-                        <code>http://localhost:${PORT}/iframe-vlc</code> (Current stream)
+                        <code>${baseUrl}/iframe-vlc</code> (Current stream)
                     </div>
-                    <button class="copy-btn" onclick="copyToClipboard('http://localhost:${PORT}/iframe-vlc')">Copy URL</button>
+                    <button class="copy-btn" onclick="copyToClipboard('${baseUrl}/iframe-vlc')">Copy URL</button>
                 </div>
                 
                 ${iframe_m3u8_urls.map((url, index) => `
                     <div class="url-container">
                         <div class="url-text">
-                            <code>http://localhost:${PORT}/iframe-stream?index=${index}</code> (Stream ${index + 1})
+                            <code>${baseUrl}/iframe-stream?index=${index}</code> (Stream ${index + 1})
                         </div>
-                        <button class="copy-btn" onclick="copyToClipboard('http://localhost:${PORT}/iframe-stream?index=${index}')">Copy URL</button>
+                        <button class="copy-btn" onclick="copyToClipboard('${baseUrl}/iframe-stream?index=${index}')">Copy URL</button>
                     </div>
                 `).join('')}
             ` : `
