@@ -115,25 +115,31 @@ const getSource = async (req, res) => {
         // Fetch URL from Redis
         const url = await streamModel.getSourceUrl();
 
-        // Fetch the HTML content of the website using Axios
-        const response = await axios.get(url);
-        const html = response.data;
-
-        // Load the HTML into Cheerio
-        const $ = cheerio.load(html);
-
-        // Extract the m3u8 URL using a regular expression
-        const m3u8Regex = /sources: \[\s*{[^}]*file:\s*"([^"]+)"[^}]*}/;
-        const match = html.match(m3u8Regex);
-
-        if (match && match[1]) {
-            const m3u8Url = match[1]; // Extracted m3u8 link
-            console.log('Extracted m3u8 link:', m3u8Url);
-            await redis.set('m3u8_url', m3u8Url); // Store the m3u8 URL in Redis
-            res.redirect(m3u8Url); // Redirect to the m3u8 URL
-        } else {
-            throw new Error('m3u8 link not found in the HTML.');
+        if (!url) {
+            throw new Error("m3u8 link not found in the HTML.")
         }
+
+        res.redirect(url)
+
+        // Fetch the HTML content of the website using Axios
+        // const response = await axios.get(url);
+        // const html = response.data;
+
+        // // Load the HTML into Cheerio
+        // const $ = cheerio.load(html);
+
+        // // Extract the m3u8 URL using a regular expression
+        // const m3u8Regex = /sources: \[\s*{[^}]*file:\s*"([^"]+)"[^}]*}/;
+        // const match = html.match(m3u8Regex);
+
+        // if (match && match[1]) {
+        //     const m3u8Url = match[1]; // Extracted m3u8 link
+        //     console.log('Extracted m3u8 link:', m3u8Url);
+        //     await redis.set('m3u8_url', m3u8Url); // Store the m3u8 URL in Redis
+        //     res.redirect(m3u8Url); // Redirect to the m3u8 URL
+        // } else {
+        //     throw new Error('m3u8 link not found in the HTML.');
+        // }
     } catch (error) {
         const headers = req.headers;
         console.error('Error:', error);
