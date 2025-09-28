@@ -24,8 +24,9 @@ module.exports = {
         "/streams",
         "/iframe-refresh",
         "/update-iframe-url",
-        "/vlc-iframe",    // Add this
-        "/vlc-playlist",  // Add this
-        "/vlc-segment"    // Add this
+        "/vlc-iframe",
+        "/vlc-playlist",
+        "/vlc-segment",
+        "/update-lunar-status"  // Added new route
     ]
 };
