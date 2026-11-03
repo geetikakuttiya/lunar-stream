@@ -3,7 +3,7 @@ const path = require('path');
 
 const PLAYLIST_PATH = path.join(__dirname, '..', 'data', 'playlist.json');
 
-const DEMO_CHANNEL_URL = 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8';
+const DEMO_CHANNEL_URL = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
 
 const emptyPlaylist = () => ({
   name: 'Playlist',
