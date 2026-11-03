@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Playlist Manager</title>
+    <style>
+      :root {
+        --bg: #08111d;
+        --panel: #101b2b;
+        --card: #16263e;
+        --muted: #a7b4c4;
+        --text: #edf3ff;
+        --accent: #3ea7ff;
+        --ok: #35c98d;
+        --warn: #ffb84d;
+        --danger: #ff5d6c;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(180deg, var(--bg), #0f1a28);
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .panel {
+        background: rgba(16, 27, 43, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        margin: 0 0 24px;
+        font-size: 2rem;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      label {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      input, button {
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 10px 12px;
+        font-size: 0.96rem;
+      }
+
+      input {
+        background: rgba(255,255,255,0.03);
+        color: var(--text);
+      }
+
+      button {
+        background: var(--accent);
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      button.secondary {
+        background: var(--card);
+      }
+
+      button.danger {
+        background: var(--danger);
+      }
+
+      button.success {
+        background: var(--ok);
+      }
+
+      .channel-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .channel-item {
+        display: grid;
+        grid-template-columns: 54px minmax(220px, 1fr) auto;
+        gap: 14px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 12px;
+        padding: 12px;
+        align-items: center;
+      }
+
+      .channel-thumb {
+        width: 54px;
+        height: 54px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #2b7fff, #1db7ff);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        color: white;
+        overflow: hidden;
+      }
+
+      .channel-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .channel-meta {
+        min-width: 0;
+      }
+
+      .channel-name {
+        font-weight: 700;
+        margin-bottom: 6px;
+        overflow-wrap: anywhere;
+      }
+
+      .channel-url {
+        color: var(--muted);
+        font-size: 0.82rem;
+        overflow-wrap: anywhere;
+      }
+
+      .channel-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .mini-btn {
+        padding: 7px 10px;
+        font-size: 0.8rem;
+      }
+
+      .hidden-channel {
+        opacity: 0.55;
+      }
+
+      .status {
+        margin-top: 10px;
+        color: var(--muted);
+        min-height: 1.2em;
+      }
+
+      @media (max-width: 700px) {
+        .channel-item {
+          grid-template-columns: 1fr;
+        }
+
+        .channel-actions {
+          justify-content: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Playlist Manager</h1>
+
+      <div id="status" class="status">Loading playlist...</div>
+
+      <div class="panel">
+        <div class="grid">
+          <div>
+            <div class="field">
+              <label for="playlistUrl">Import from playlist URL</label>
+              <input id="playlistUrl" type="url" placeholder="https://example.com/playlist.m3u" />
+            </div>
+            <button id="importUrlBtn">Import Playlist URL</button>
+          </div>
+
+          <div>
+            <div class="field">
+              <label for="playlistFile">Upload .m3u / .m3u8 file</label>
+              <input id="playlistFile" type="file" accept=".m3u,.m3u8,.txt" />
+            </div>
+            <button id="uploadFileBtn" class="secondary">Upload Playlist File</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Add a channel manually</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="channelName">Channel name</label>
+            <input id="channelName" type="text" placeholder="BBC News" />
+          </div>
+          <div class="field">
+            <label for="channelUrl">Channel URL</label>
+            <input id="channelUrl" type="url" placeholder="https://example.com/stream.m3u8" />
+          </div>
+          <div class="field">
+            <label for="channelGroup">Group</label>
+            <input id="channelGroup" type="text" placeholder="News" />
+          </div>
+          <div class="field">
+            <label for="channelLogo">Logo URL</label>
+            <input id="channelLogo" type="url" placeholder="https://example.com/logo.png" />
+          </div>
+        </div>
+        <button id="addChannelBtn" class="success">Add Channel</button>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <h2 style="margin:0;">Channels</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="refreshBtn" class="secondary">Refresh</button>
+            <button id="clearAllBtn" class="danger">Clear All</button>
+          </div>
+        </div>
+        <div id="channelList" class="channel-list"></div>
+      </div>
+    </div>
+
+    <script>
+      const statusEl = document.getElementById('status');
+      const channelListEl = document.getElementById('channelList');
+
+      function setStatus(message, isError = false) {
+        statusEl.textContent = message;
+        statusEl.style.color = isError ? '#ff837d' : '#a7b4c4';
+      }
+
+      async function ensureAuthenticated() {
+        try {
+          const response = await fetch('/api/playlist/status', { credentials: 'same-origin' });
+          const data = await response.json();
+
+          if (data.authenticated) {
+            setStatus('Authenticated.');
+            return true;
+          }
+
+          const password = window.prompt('Enter the password');
+          if (!password) {
+            alert('Password is required to access the playlist manager.');
+            setStatus('Password is required to access the playlist manager.', true);
+            return false;
+          }
+
+          const authResponse = await fetch('/api/playlist/auth', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+          });
+
+          if (!authResponse.ok) {
+            const error = await authResponse.json().catch(() => ({ error: 'Invalid password' }));
+            alert(error.error || 'Invalid password');
+            setStatus(error.error || 'Invalid password', true);
+            return false;
+          }
+
+          setStatus('Authenticated.');
+          return true;
+        } catch (error) {
+          setStatus('Unable to authenticate with the server.', true);
+          return false;
+        }
+      }
+
+      async function fetchPlaylist() {
+        const response = await fetch('/api/playlist', { credentials: 'same-origin' });
+        if (!response.ok) {
+          throw new Error('Failed to load playlist');
+        }
+
+        const data = await response.json();
+        return data.channels || [];
+      }
+
+      function channelThumb(channel) {
+        if (channel.logo) {
+          return `<img src="${channel.logo}" alt="${channel.name}" onerror="this.style.display='none'" />`;
+        }
+        return `<span>${(channel.name || 'CH').slice(0, 2).toUpperCase()}</span>`;
+      }
+
+      function renderChannels(channels) {
+        if (!channels.length) {
+          channelListEl.innerHTML = '<div class="status">No channels yet. Add one or import a playlist.</div>';
+          return;
+        }
+
+        channelListEl.innerHTML = channels.map((channel, index) => `
+          <div class="channel-item ${channel.hidden ? 'hidden-channel' : ''}" data-id="${channel.id}">
+            <div class="channel-thumb">${channelThumb(channel)}</div>
+            <div class="channel-meta">
+              <div class="channel-name">${channel.name}</div>
+              <div class="channel-url">${channel.group ? `${channel.group} • ` : ''}${channel.url}</div>
+            </div>
+            <div class="channel-actions">
+              <button class="mini-btn secondary" data-action="move-up" data-id="${channel.id}">↑</button>
+              <button class="mini-btn secondary" data-action="move-down" data-id="${channel.id}">↓</button>
+              <button class="mini-btn secondary" data-action="toggle-hidden" data-id="${channel.id}">${channel.hidden ? 'Show' : 'Hide'}</button>
+              <button class="mini-btn" data-action="edit" data-id="${channel.id}">Edit</button>
+              <button class="mini-btn danger" data-action="delete" data-id="${channel.id}">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      async function reloadChannels() {
+        try {
+          const channels = await fetchPlaylist();
+          renderChannels(channels);
+        } catch (error) {
+          setStatus('Could not refresh the channel list.', true);
+        }
+      }
+
+      async function handleChannelAction(event) {
+        const action = event.target.dataset.action;
+        const id = event.target.dataset.id;
+        if (!action || !id) return;
+
+        const channels = await fetchPlaylist();
+        const index = channels.findIndex((channel) => channel.id === id);
+        if (index === -1) return;
+
+        if (action === 'delete') {
+          const confirmed = window.confirm('Delete this channel?');
+          if (!confirmed) return;
+          const response = await fetch(`/api/playlist/channels/${id}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+          });
+          if (!response.ok) {
+            setStatus('Unable to delete the channel.', true);
+            return;
+          }
+          setStatus('Channel deleted.');
+          await reloadChannels();
+          return;
+        }
+
+        if (action === 'toggle-hidden') {
+          const updated = { ...channels[index], hidden: !channels[index].hidden };
+          const response = await fetch(`/api/playlist/channels/${id}`, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated)
+          });
+          if (!response.ok) {
+            setStatus('Unable to update visibility.', true);
+            return;
+          }
+          setStatus(`Channel ${updated.hidden ? 'hidden' : 'shown'}.`);
+          await reloadChannels();
+          return;
+        }
+
+        if (action === 'move-up' || action === 'move-down') {
+          const nextIndex = action === 'move-up' ? index - 1 : index + 1;
+          if (nextIndex < 0 || nextIndex >= channels.length) return;
+
+          const reordered = [...channels];
+          const [moved] = reordered.splice(index, 1);
+          reordered.splice(nextIndex, 0, moved);
+
+          const order = reordered.map((channel) => channel.id);
+          const response = await fetch('/api/playlist/reorder', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order })
+          });
+
+          if (!response.ok) {
+            setStatus('Unable to reorder channels.', true);
+            return;
+          }
+
+          setStatus('Channels reordered.');
+          await reloadChannels();
+          return;
+        }
+
+        if (action === 'edit') {
+          const current = channels[index];
+          const name = window.prompt('Channel name', current.name || '');
+          if (name === null) return;
+          const url = window.prompt('Channel URL', current.url || '');
+          if (url === null) return;
+          const group = window.prompt('Channel group', current.group || '');
+          if (group === null) return;
+          const logo = window.prompt('Logo URL', current.logo || '');
+          if (logo === null) return;
+
+          const updated = {
+            ...current,
+            name: name.trim() || current.name,
+            url: url.trim() || current.url,
+            group: group.trim(),
+            logo: logo.trim()
+          };
+
+          const response = await fetch(`/api/playlist/channels/${id}`, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updated)
+          });
+
+          if (!response.ok) {
+            setStatus('Unable to save the edited channel.', true);
+            return;
+          }
+
+          setStatus('Channel updated.');
+          await reloadChannels();
+        }
+      }
+
+      async function addManualChannel() {
+        const name = document.getElementById('channelName').value.trim();
+        const url = document.getElementById('channelUrl').value.trim();
+        const group = document.getElementById('channelGroup').value.trim();
+        const logo = document.getElementById('channelLogo').value.trim();
+
+        if (!name || !url) {
+          setStatus('Name and URL are required for a manual channel.', true);
+          return;
+        }
+
+        const response = await fetch('/api/playlist/channels', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, url, group, logo, hidden: false })
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ error: 'Unable to add the channel' }));
+          setStatus(error.error || 'Unable to add the channel', true);
+          return;
+        }
+
+        document.getElementById('channelName').value = '';
+        document.getElementById('channelUrl').value = '';
+        document.getElementById('channelGroup').value = '';
+        document.getElementById('channelLogo').value = '';
+        setStatus('Channel added.');
+        await reloadChannels();
+      }
+
+      async function importUrl() {
+        const url = document.getElementById('playlistUrl').value.trim();
+        if (!url) {
+          setStatus('Please enter a playlist URL.', true);
+          return;
+        }
+
+        const response = await fetch('/api/playlist/import-url', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json().catch(() => ({ error: 'Import failed' }));
+        if (!response.ok) {
+          setStatus(data.error || 'Import failed', true);
+          return;
+        }
+
+        document.getElementById('playlistUrl').value = '';
+        setStatus(`Imported ${data.channels?.length || 0} channels.`);
+        await reloadChannels();
+      }
+
+      async function importFile() {
+        const fileInput = document.getElementById('playlistFile');
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) {
+          setStatus('Please choose a playlist file.', true);
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/playlist/import-file', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: formData
+        });
+
+        const data = await response.json().catch(() => ({ error: 'Upload failed' }));
+        if (!response.ok) {
+          setStatus(data.error || 'Upload failed', true);
+          return;
+        }
+
+        fileInput.value = '';
+        setStatus(`Uploaded ${data.channels?.length || 0} channels.`);
+        await reloadChannels();
+      }
+
+      document.getElementById('addChannelBtn').addEventListener('click', async () => {
+        const authenticated = await ensureAuthenticated();
+        if (!authenticated) return;
+        await addManualChannel();
+      });
+
+      document.getElementById('importUrlBtn').addEventListener('click', async () => {
+        const authenticated = await ensureAuthenticated();
+        if (!authenticated) return;
+        await importUrl();
+      });
+
+      document.getElementById('uploadFileBtn').addEventListener('click', async () => {
+        const authenticated = await ensureAuthenticated();
+        if (!authenticated) return;
+        await importFile();
+      });
+
+      document.getElementById('refreshBtn').addEventListener('click', async () => {
+        const authenticated = await ensureAuthenticated();
+        if (!authenticated) return;
+        await reloadChannels();
+      });
+
+      document.getElementById('clearAllBtn').addEventListener('click', async () => {
+        const authenticated = await ensureAuthenticated();
+        if (!authenticated) return;
+
+        const confirmed = window.confirm('Clear the entire playlist? This will remove all channels.');
+        if (!confirmed) return;
+
+        const response = await fetch('/api/playlist/clear', {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ error: 'Unable to clear the playlist.' }));
+          setStatus(error.error || 'Unable to clear the playlist.', true);
+          return;
+        }
+
+        setStatus('Playlist cleared.');
+        await reloadChannels();
+      });
+
+      channelListEl.addEventListener('click', async (event) => {
+        const target = event.target.closest('[data-action]');
+        if (!target) return;
+        const authenticated = await ensureAuthenticated();
+        if (!authenticated) return;
+        await handleChannelAction({ target });
+      });
+
+      (async function init() {
+        const authenticated = await ensureAuthenticated();
+        if (!authenticated) {
+          return;
+        }
+        await reloadChannels();
+      })();
+    </script>
+  </body>
+</html>

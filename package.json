@@ -5,20 +5,18 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "node --watch app.js"
   },
   "keywords": [],
   "author": "Rakshash",
   "license": "ISC",
   "dependencies": {
-    "axios": "^1.8.4",
+    "axios": "^1.21.0",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
+    "multer": "^2.5.0",
     "redis": "^4.7.0"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.22"
   }
 }

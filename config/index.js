@@ -16,10 +16,10 @@ module.exports = {
     publicUrl: process.env.PUBLIC_URL || '',
     defaultIframeUrl: "https://user4580.ifrem.net/iframe/frame.php",
     allowedPaths: [
-        "/update-url", 
-        "/update-form", 
+        "/update-url",
+        "/update-form",
         "/iframe-form",
-        "/xyzstream", 
+        "/xyzstream",
         "/stream-debug",
         "/streams",
         "/iframe-refresh",
@@ -27,6 +27,16 @@ module.exports = {
         "/vlc-iframe",
         "/vlc-playlist",
         "/vlc-segment",
-        "/update-lunar-status"  // Added new route
+        "/update-lunar-status",
+        "/playlist-admin",
+        "/playlist",
+        "/playlist.m3u",
+        "/playlist.json",
+        "/api/playlist",
+        "/api/playlist/public",
+        "/api/playlist/status",
+        "/api/playlist/auth",
+        "/api/playlist/import-url",
+        "/api/playlist/import-file"
     ]
 };
