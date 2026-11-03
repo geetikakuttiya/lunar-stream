@@ -3,12 +3,28 @@ const path = require('path');
 
 const PLAYLIST_PATH = path.join(__dirname, '..', 'data', 'playlist.json');
 
+const DEMO_CHANNEL_URL = 'https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8';
+
 const emptyPlaylist = () => ({
   name: 'Playlist',
   channels: [],
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 });
+
+function getFallbackChannels() {
+  return [{
+    id: 'demo-channel',
+    name: 'Demo Stream',
+    url: DEMO_CHANNEL_URL,
+    group: 'Demo',
+    logo: '',
+    hidden: false,
+    tvgId: 'demo-stream',
+    tvgName: 'Demo Stream',
+    sortOrder: 0
+  }];
+}
 
 function ensurePlaylistFile() {
   const dir = path.dirname(PLAYLIST_PATH);
@@ -80,7 +96,13 @@ function writePlaylist(data) {
 
 function getPublicChannels() {
   const playlist = readPlaylist();
-  return (playlist.channels || []).filter((channel) => channel && channel.url && !channel.hidden);
+  const channels = (playlist.channels || []).filter((channel) => channel && channel.url && !channel.hidden);
+
+  if (channels.length) {
+    return channels;
+  }
+
+  return getFallbackChannels();
 }
 
 module.exports = {
@@ -89,5 +111,6 @@ module.exports = {
   normalizeChannel,
   readPlaylist,
   getPublicChannels,
-  writePlaylist
+  writePlaylist,
+  getFallbackChannels
 };
