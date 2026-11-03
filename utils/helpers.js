@@ -8,10 +8,13 @@ function getBaseUrl(req) {
     if (process.env.PUBLIC_URL) {
         return process.env.PUBLIC_URL.replace(/\/$/, ''); // Remove trailing slash if present
     }
-    
-    // Fallback to request protocol and host in development
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    return `${protocol}://${req.headers.host}`;
+
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const forwardedHost = req.headers['x-forwarded-host'] || req.headers.host;
+    const protocol = Array.isArray(forwardedProto) ? forwardedProto[0] : (forwardedProto || (process.env.NODE_ENV === 'production' ? 'https' : 'http'));
+    const host = Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost;
+
+    return `${protocol}://${host}`;
 }
 
 module.exports = {

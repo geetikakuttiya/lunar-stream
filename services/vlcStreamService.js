@@ -13,6 +13,30 @@ const COMMON_HEADERS = {
     'Origin': "https://userrr4591.ifrem.net"
 };
 
+function rewritePlaylistLine(line, playlistBaseUrl, baseUrl) {
+    if (!line || line.startsWith('#')) {
+        return line;
+    }
+
+    const trimmed = line.trim();
+    if (!trimmed) {
+        return line;
+    }
+
+    let targetUrl;
+    try {
+        targetUrl = new URL(trimmed, playlistBaseUrl).toString();
+    } catch (error) {
+        targetUrl = trimmed;
+    }
+
+    if (/\.m3u8(?:\?|$)/i.test(targetUrl)) {
+        return `${baseUrl}/vlc-playlist?url=${encodeURIComponent(targetUrl)}`;
+    }
+
+    return `${baseUrl}/vlc-segment?url=${encodeURIComponent(targetUrl)}`;
+}
+
 /**
  * Create a modified playlist that routes all segments through our proxy
  * @param {String} url - The m3u8 URL to proxy
@@ -26,14 +50,12 @@ const getProxiedPlaylist = async (url, baseUrl) => {
             httpsAgent
         });
 
-        let playlist = response.data;
+        const playlistBaseUrl = new URL(url).toString();
+        const rewrittenLines = response.data
+            .split(/\r?\n/)
+            .map((line) => rewritePlaylistLine(line, playlistBaseUrl, baseUrl));
 
-        // Rewrite all segment URLs to pass through /segment
-        playlist = playlist.replace(/https?:\/\/[^ \n]*/g, segmentUrl => {
-            return `${baseUrl}/vlc-segment?url=${encodeURIComponent(segmentUrl)}`;
-        });
-
-        return playlist;
+        return rewrittenLines.join('\n');
     } catch (error) {
         console.error('Error proxying playlist:', error.message);
         throw error;
